@@ -1,1 +1,0 @@
-this is the server application documentation
