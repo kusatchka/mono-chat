@@ -1,4 +1,4 @@
-import socket
+import socket, threading
 
 DISCONNECT_MESSAGE = ["/leave", "/quit", "/bye", "/part", "/exit"]
 FORMAT = 'utf-8'
@@ -6,6 +6,10 @@ HEADER = 64
 PORT = 5050
 SERVER = "192.168.1."
 ADDR = (SERVER, PORT)
+
+def check_for_messages():
+    while True:
+        print(client.recv(2048).decode(FORMAT))
 
 def send(msg):
     message = msg.encode(FORMAT)
@@ -38,6 +42,8 @@ if __name__ == "__main__":
             else:
                 break
     while True:
+        thread = threading.Thread(target=check_for_messages)
+        thread.start()
         message = input(">")
 
         if message in DISCONNECT_MESSAGE:
@@ -46,3 +52,4 @@ if __name__ == "__main__":
         
         else:
             send(message)
+            print(client.recv(2048).decode(FORMAT))

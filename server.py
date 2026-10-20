@@ -11,30 +11,37 @@ server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
 
 def handle_client(conn, addr):
-    print(f"[NEW USER] {addr} joined.")
+    print(f"[{conn}] has joined.")
 
     connected = True
+    
     while connected:
         msg_length = conn.recv(HEADER).decode(FORMAT)
+        
         if msg_length:    
             msg_length = int(msg_length)
             msg = conn.recv(msg_length).decode(FORMAT)
+            
             if msg in DISCONNECT_MESSAGE:
+                print(f"[{addr}] has left")
                 connected = False
-
-            print(f"[{addr}] {msg}")
+            
+            else:
+                print(f"[{addr}] {msg}")
+                conn.send(f"\n[{addr}] {msg}".encode(FORMAT))
     
     conn.close()
 
 def start():
     server.listen()
     print(f"[SERVER] is up and is on {ADDR}")
-    print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
+    print(f"[PEOPLE ONLINE: {threading.active_count() - 1}]")
+   
     while True:
         conn, addr = server.accept()
         thread = threading.Thread(target=handle_client, args=(conn, addr))
         thread.start()
-        print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
+        print(f"[PEOPLE ONLINE: {threading.active_count() - 1}]")
 
 print("Starting Server...")
 start()
