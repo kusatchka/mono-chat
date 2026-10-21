@@ -4,12 +4,16 @@ DISCONNECT_MESSAGE = ["/leave", "/quit", "/bye", "/part", "/exit"]
 FORMAT = 'utf-8'
 HEADER = 64
 PORT = 5050
-SERVER = "192.168.1."
+SERVER = "10.233.25."
 ADDR = (SERVER, PORT)
+username = ("kusatchka")
 
 def check_for_messages():
     while True:
-        print(client.recv(2048).decode(FORMAT))
+        recv_message = client.recv(2048).decode(FORMAT)
+
+        if len(recv_message) != 0:
+            print(recv_message)
 
 def send(msg):
     message = msg.encode(FORMAT)
@@ -20,6 +24,8 @@ def send(msg):
     client.send(message)
 
 if __name__ == "__main__":
+    thread = threading.Thread(target=check_for_messages)
+    username = input("Enter Your Username: ")
     SERVERSUB_IDENT = input("Enter Subnet: ")
     while True:
         if len(SERVERSUB_IDENT) > 3:
@@ -30,6 +36,8 @@ if __name__ == "__main__":
             try:
                 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client.connect(ADDR)
+                thread.start()
+                send(username)
             
             except ConnectionRefusedError:
                 print("Not a valid Subnet\n")
@@ -42,14 +50,12 @@ if __name__ == "__main__":
             else:
                 break
     while True:
-        thread = threading.Thread(target=check_for_messages)
-        thread.start()
-        message = input(">")
+        message = input("")
 
         if message in DISCONNECT_MESSAGE:
             send(message)
             exit()
         
+
         else:
             send(message)
-            print(client.recv(2048).decode(FORMAT))
