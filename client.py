@@ -4,7 +4,8 @@ DISCONNECT_MESSAGE = ["/leave", "/quit", "/bye", "/part", "/exit"]
 FORMAT = 'utf-8'
 HEADER = 64
 PORT = 5050
-SERVER = "10.233.25."
+SERVER = socket.gethostbyname(socket.gethostname())
+SERVER = SERVER[:-3]
 ADDR = (SERVER, PORT)
 username = ("kusatchka")
 
