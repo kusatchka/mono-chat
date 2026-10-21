@@ -1,13 +1,15 @@
 import socket, threading
 
 DISCONNECT_MESSAGE = ["/leave", "/quit", "/bye", "/part", "/exit"]
+COMMANDS = ["/list"]
 FORMAT = 'utf-8'
 HEADER = 64
 PORT = 5050
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
 connections = []
-usernames = {}
+server_usernames = {}
+client_usernames = {} #Reversed server_usernames
 
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -29,22 +31,29 @@ def handle_client(conn, addr):
             if first_message:
                 first_message = False
                 username = msg
-                usernames.update({addr: username})
+                server_usernames.update({addr: username})
+                client_usernames.update({username: addr})
+                
                 for connection in connections:
-                        connection.send(f"[{usernames[addr]}] has joined".encode(FORMAT))
+                        connection.send(f"[{server_usernames[addr]}] has joined".encode(FORMAT))
+            
             else: 
 
                 if msg in DISCONNECT_MESSAGE:
-                    print(f"[{usernames[addr]}] has left")
                     connections.remove(conn)
-                    usernames.pop(addr)
+                    for connection in connections:    
+                        connection.send(f"[{server_usernames[addr]}] has left".encode(FORMAT))
+                    server_usernames.pop(addr)
                     connected = False
+                
+                elif msg == COMMANDS[0]:
+                    conn.send(f"Users that are online: [{client_usernames.keys()}]".encode(FORMAT))
                 
                 else:
                     print(f"[{addr}]: {msg}")
                     #conn.send(f"[{addr}]: {msg}".encode(FORMAT))
                     for connection in connections:
-                        connection.send(f"[{usernames[addr]}]: {msg}".encode(FORMAT))
+                        connection.send(f"[{server_usernames[addr]}]: {msg}".encode(FORMAT))
             
     
     conn.close()

@@ -1,6 +1,7 @@
 import socket, threading
 
 DISCONNECT_MESSAGE = ["/leave", "/quit", "/bye", "/part", "/exit"]
+COMMANDS = ["/list"]
 FORMAT = 'utf-8'
 HEADER = 64
 PORT = 5050
