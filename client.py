@@ -26,8 +26,7 @@ def send(msg):
     client.send(message)
 
 if __name__ == "__main__":
-    thread = threading.Thread(target=check_for_messages)
-    username = input("Enter Your Username: ")
+    input_thread = threading.Thread(target=check_for_messages)
     SERVERSUB_IDENT = input("Enter Subnet: ")
     while True:
         if len(SERVERSUB_IDENT) > 3:
@@ -38,7 +37,8 @@ if __name__ == "__main__":
             try:
                 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client.connect(ADDR)
-                thread.start()
+                input_thread.start()
+                username = input("Enter Your Username: ").strip()
                 send(username)
             
             except ConnectionRefusedError:

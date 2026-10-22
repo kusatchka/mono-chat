@@ -11,7 +11,6 @@ connections = []
 server_usernames = {}
 client_usernames = {} #Reversed server_usernames
 
-
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
 
@@ -35,7 +34,7 @@ def handle_client(conn, addr):
                 client_usernames.update({username: addr})
                 
                 for connection in connections:
-                        connection.send(f"[{server_usernames[addr]}] has joined".encode(FORMAT))
+                        connection.send(f"{server_usernames[addr]} has joined".encode(FORMAT))
             
             else: 
 
@@ -44,7 +43,13 @@ def handle_client(conn, addr):
                     for connection in connections:    
                         connection.send(f"[{server_usernames[addr]}] has left".encode(FORMAT))
                     server_usernames.pop(addr)
+                    client_usernames.pop(username)
                     connected = False
+                    if len(client_usernames) == 0:
+                        print("[SERVER]: No Active Connections")
+                    else: 
+                        print(f"[SERVER]: {client_usernames}") 
+                    
                 
                 elif msg == COMMANDS[0]:
                     conn.send(f"Users that are online: [{client_usernames.keys()}]".encode(FORMAT))
@@ -58,21 +63,37 @@ def handle_client(conn, addr):
     
     conn.close()
 
+def server_input():
+    while True:
+        message = input()
+        if message in DISCONNECT_MESSAGE:
+            server.close()
+            exit()
+        elif message == COMMANDS[0]:
+            print(server_usernames)
+        else:
+             for connection in connections:
+                        connection.send(f"[SERVER]: {message}".encode(FORMAT))
+
 def start():
     server.listen()
-    print(f"[SERVER] is up and is on {ADDR}")
-    print(f"[PEOPLE ONLINE: {threading.active_count() - 1}]")
+    print(f"[SERVER] ONLINE AVAILABLE ON: {ADDR}")
+    print(f"[SERVER] ACTIVE CONNECTIONS: {threading.active_count() - 1}]")
     try:
         while True:
             conn, addr = server.accept()
-            thread = threading.Thread(target=handle_client, args=(conn, addr))
+            client_thread = threading.Thread(target=handle_client, args=(conn, addr))
+            input_thread = threading.Thread(target=server_input)
             connections.append(conn)
             print(connections)
-            thread.start()
-            print(f"[PEOPLE ONLINE: {threading.active_count() - 1}]")
+            input_thread.start()
+            client_thread.start()
+            print(f"[SERVER] ACTIVE CONNECTIONS: {threading.active_count() - 2}]")
     except KeyboardInterrupt:
         server.close()    
         
+
+            
 
 print("Starting Server...")
 start()
