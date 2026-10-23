@@ -1,4 +1,4 @@
-import socket, threading
+import socket, threading, sys
 
 DISCONNECT_MESSAGE = ["/leave", "/quit", "/bye", "/part", "/exit"]
 COMMANDS = ["/list"]
@@ -8,7 +8,6 @@ PORT = 5050
 SERVER = socket.gethostbyname(socket.gethostname())
 SERVER = SERVER[:-3]
 ADDR = (SERVER, PORT)
-username = ("kusatchka")
 
 def check_for_messages():
     while True:
@@ -56,7 +55,7 @@ if __name__ == "__main__":
 
         if message in DISCONNECT_MESSAGE:
             send(message)
-            exit()
+            sys.exit()
         
 
         else:

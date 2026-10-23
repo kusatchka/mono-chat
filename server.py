@@ -78,7 +78,6 @@ def server_input():
 def start():
     server.listen()
     print(f"[SERVER] ONLINE AVAILABLE ON: {ADDR}")
-    print(f"[SERVER] ACTIVE CONNECTIONS: {threading.active_count() - 1}]")
     try:
         while True:
             conn, addr = server.accept()
