@@ -72,7 +72,8 @@ def server_input():
         elif message == COMMANDS[0]:
             print(server_usernames)
         else:
-             for connection in connections:
+            print(f"[SERVER]: {message}")
+            for connection in connections:
                         connection.send(f"[SERVER]: {message}".encode(FORMAT))
 
 def start():

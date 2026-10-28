@@ -8,6 +8,7 @@ PORT = 5050
 SERVER = socket.gethostbyname(socket.gethostname())
 SERVER = SERVER[:-3]
 ADDR = (SERVER, PORT)
+base = SERVER
 
 def check_for_messages():
     while True:
@@ -26,30 +27,40 @@ def send(msg):
 
 if __name__ == "__main__":
     input_thread = threading.Thread(target=check_for_messages)
-    SERVERSUB_IDENT = input("Enter Subnet: ")
-    while True:
-        if len(SERVERSUB_IDENT) > 3:
-            SERVERSUB_IDENT = input("Enter Subnet: ")
-        else:
-            SERVER = SERVER + SERVERSUB_IDENT
-            ADDR = (SERVER, PORT)
-            try:
-                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                client.connect(ADDR)
-                input_thread.start()
-                username = input("Enter Your Username: ").strip()
-                send(username)
-            
-            except ConnectionRefusedError:
-                print("Not a valid Subnet\n")
+    def handle_subnet_input():
+        SERVERSUB_IDENT = input("Enter Subnet: ")
+        while True:
+            if len(SERVERSUB_IDENT) > 3:
                 SERVERSUB_IDENT = input("Enter Subnet: ")
-            
-            except OSError:
-                print("Not a valid Subnet\n")
-                SERVERSUB_IDENT = input("Enter Subnet: ")
-
-            else:
+                handle_subnet_input()
                 break
+            else:
+                SERVER = base + SERVERSUB_IDENT
+                ADDR = (SERVER, PORT)
+                try:
+                    global client
+                    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    client.connect(ADDR)
+                    input_thread.start()
+                    username = input("Enter Your Username: ").strip()
+                    send(username)
+                
+                except ConnectionRefusedError:
+                    print("Not a valid Subnet\n")
+                    print("Try Again")
+                    handle_subnet_input()
+                    break
+                
+                except OSError:
+                    print("Not a valid Subnet\n")
+                    print("Try Again")
+                    handle_subnet_input()
+                    break
+                
+                else:
+                    break
+    
+    handle_subnet_input()
     while True:
         message = input("")
 
