@@ -1,7 +1,7 @@
-import socket, threading
+import socket, threading, sys
 
 DISCONNECT_MESSAGE = ["/leave", "/quit", "/bye", "/part", "/exit"]
-COMMANDS = ["/list"]
+COMMANDS = ["/list", "/ban", "/kick"]
 FORMAT = 'utf-8'
 HEADER = 64
 PORT = 5050
@@ -10,57 +10,65 @@ ADDR = (SERVER, PORT)
 connections = []
 server_usernames = {}
 client_usernames = {} #Reversed server_usernames
+usernames = list()
+
+disconnect = threading.Event()
+lock = threading.Lock()
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
 
 def handle_client(conn, addr):
+    client_thread = threading.Thread(target=handle_client, daemon=True, args=(conn, addr))
     print(f"[{addr}] has joined.")
 
     connected = True
     first_message = True
 
-    while connected:
-        msg_length = conn.recv(HEADER).decode(FORMAT) #Checks the length of the message with HEADER
-        
-        if msg_length:    
-            msg_length = int(msg_length)
-            msg = conn.recv(msg_length).decode(FORMAT)
+    while not disconnect.is_set():
+        while connected:
+            msg_length = conn.recv(HEADER).decode(FORMAT) #Checks the length of the message with HEADER
             
-            if first_message:
-                first_message = False
-                username = msg
-                server_usernames.update({addr: username})
-                client_usernames.update({username: addr})
+            if msg_length:    
+                msg_length = int(msg_length)
+                msg = conn.recv(msg_length).decode(FORMAT)
                 
-                for connection in connections:
-                        connection.send(f"{server_usernames[addr]} has joined".encode(FORMAT))
-            
-            else: 
-
-                if msg in DISCONNECT_MESSAGE:
-                    connections.remove(conn)
-                    for connection in connections:    
-                        connection.send(f"[{server_usernames[addr]}] has left".encode(FORMAT))
-                    server_usernames.pop(addr)
-                    client_usernames.pop(username)
-                    connected = False
-                    if len(client_usernames) == 0:
-                        print("[SERVER]: No Active Connections")
-                    else: 
-                        print(f"[SERVER]: {client_usernames}") 
+                if first_message:
+                    first_message = False
+                    username = msg
+                    usernames.append(username)
+                    server_usernames.update({addr: username})
+                    client_usernames.update({username: addr})
                     
-                
-                elif msg == COMMANDS[0]:
-                    conn.send(f"Users that are online: [{client_usernames.keys()}]".encode(FORMAT))
-                
-                else:
-                    print(f"[{addr}]: {msg}")
-                    #conn.send(f"[{addr}]: {msg}".encode(FORMAT))
                     for connection in connections:
-                        connection.send(f"[{server_usernames[addr]}]: {msg}".encode(FORMAT))
+                            connection.send(f"{server_usernames[addr]} has joined".encode(FORMAT))
+                
+                else: 
+
+                    if msg in DISCONNECT_MESSAGE:
+                        connections.remove(conn)
+                        for connection in connections:    
+                            connection.send(f"[{server_usernames[addr]}] has left".encode(FORMAT))
+                        usernames.remove(username)
+                        server_usernames.pop(addr)
+                        client_usernames.pop(username)
+                        connected = False
+                        if len(client_usernames) == 0:
+                            print("[SERVER]: No Active Connections")
+                        else: 
+                            print(f"[SERVER]: {client_usernames}")
+                            disconnect.set()
+                    
+                    elif msg == COMMANDS[0]:
+                        conn.send(f"Users that are online: [{usernames}]".encode(FORMAT))
+                    
+                    else:
+                        print(f"[{addr}]: {msg}")
+                        #conn.send(f"[{addr}]: {msg}".encode(FORMAT))
+                        for connection in connections:
+                            connection.send(f"[{server_usernames[addr]}]: {msg}".encode(FORMAT))
             
-    
+    print(f"[SERVER] ACTIVE CONNECTIONS: {threading.active_count() - 2}]")
     conn.close()
 
 def server_input():
@@ -82,13 +90,14 @@ def start():
     try:
         while True:
             conn, addr = server.accept()
-            client_thread = threading.Thread(target=handle_client, args=(conn, addr))
-            input_thread = threading.Thread(target=server_input)
+            client_thread = threading.Thread(target=handle_client,daemon=True, args=(conn, addr))
+            input_thread = threading.Thread(target=server_input, daemon=True)
             connections.append(conn)
             print(connections)
             input_thread.start()
             client_thread.start()
             print(f"[SERVER] ACTIVE CONNECTIONS: {threading.active_count() - 2}]")
+
     except KeyboardInterrupt:
         server.close()    
         

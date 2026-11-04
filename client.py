@@ -1,4 +1,6 @@
 import socket, threading, sys
+from textual.app import App, ComposeResult
+from textual.widgets import Footer, Header 
 
 DISCONNECT_MESSAGE = ["/leave", "/quit", "/bye", "/part", "/exit"]
 COMMANDS = ["/list"]
@@ -26,7 +28,7 @@ def send(msg):
     client.send(message)
 
 if __name__ == "__main__":
-    input_thread = threading.Thread(target=check_for_messages)
+    input_thread = threading.Thread(target=check_for_messages, daemon=True)
     def handle_subnet_input():
         SERVERSUB_IDENT = input("Enter Subnet: ")
         while True:
@@ -35,7 +37,9 @@ if __name__ == "__main__":
                 handle_subnet_input()
                 break
             else:
+                global SERVER 
                 SERVER = base + SERVERSUB_IDENT
+                global ADDR
                 ADDR = (SERVER, PORT)
                 try:
                     global client
@@ -66,7 +70,9 @@ if __name__ == "__main__":
 
         if message in DISCONNECT_MESSAGE:
             send(message)
+            print(f"Disconnected from {ADDR}")
             sys.exit()
+            break
         
 
         else:
