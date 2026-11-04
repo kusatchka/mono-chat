@@ -60,7 +60,7 @@ def handle_client(conn, addr):
                             disconnect.set()
                     
                     elif msg == COMMANDS[0]:
-                        conn.send(f"Users that are online: [{usernames}]".encode(FORMAT))
+                        conn.send(f"Users that are online: {usernames}".encode(FORMAT))
                     
                     else:
                         print(f"[{addr}]: {msg}")
