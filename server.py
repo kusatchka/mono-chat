@@ -7,6 +7,7 @@ HEADER = 64
 PORT = 5050
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
+
 connections = []
 server_usernames = {}
 client_usernames = {} #Reversed server_usernames
@@ -26,6 +27,7 @@ def handle_client(conn, addr):
     first_message = True
 
     while not disconnect.is_set():
+        
         while connected:
             msg_length = conn.recv(HEADER).decode(FORMAT) #Checks the length of the message with HEADER
             
@@ -47,14 +49,18 @@ def handle_client(conn, addr):
 
                     if msg in DISCONNECT_MESSAGE:
                         connections.remove(conn)
+                        
                         for connection in connections:    
                             connection.send(f"[{server_usernames[addr]}] has left".encode(FORMAT))
+                        
                         usernames.remove(username)
                         server_usernames.pop(addr)
                         client_usernames.pop(username)
                         connected = False
+                        
                         if len(client_usernames) == 0:
                             print("[SERVER]: No Active Connections")
+                        
                         else: 
                             print(f"[SERVER]: {client_usernames}")
                             disconnect.set()
@@ -69,24 +75,34 @@ def handle_client(conn, addr):
                             connection.send(f"[{server_usernames[addr]}]: {msg}".encode(FORMAT))
             
     print(f"[SERVER] ACTIVE CONNECTIONS: {threading.active_count() - 2}]")
-    conn.close()
+    conn.close() #closes the connection between the client and the server
 
 def server_input():
+
     while True:
         message = input()
+        
         if message in DISCONNECT_MESSAGE:
             server.close()
             exit()
+        
         elif message == COMMANDS[0]:
             print(server_usernames)
+        
+        #elif message == COMMANDS[2](entered_username): #will be added soon
+        #    if entered_username in client_usernames:
+        #        client_usernames.get(entered_username)
+
         else:
             print(f"[SERVER]: {message}")
             for connection in connections:
                         connection.send(f"[SERVER]: {message}".encode(FORMAT))
 
 def start():
+
     server.listen()
     print(f"[SERVER] ONLINE AVAILABLE ON: {ADDR}")
+    
     try:
         while True:
             conn, addr = server.accept()
