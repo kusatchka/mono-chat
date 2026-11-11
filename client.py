@@ -1,6 +1,7 @@
 import socket, threading, sys
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header 
+from enum import Enum
 
 DISCONNECT_MESSAGE = ["/leave", "/quit", "/bye", "/part", "/exit"]
 COMMANDS = ["/list"]
@@ -29,6 +30,7 @@ def send(msg):
 
 if __name__ == "__main__":
     input_thread = threading.Thread(target=check_for_messages, daemon=True)
+    
     def handle_subnet_input():
         SERVERSUB_IDENT = input("Enter Subnet: ")
         while True:
@@ -36,18 +38,21 @@ if __name__ == "__main__":
                 SERVERSUB_IDENT = input("Enter Subnet: ")
                 handle_subnet_input()
                 break
+    
             else:
                 global SERVER 
                 SERVER = base + SERVERSUB_IDENT
+                
                 global ADDR
                 ADDR = (SERVER, PORT)
+                
                 try:
                     global client
                     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     client.connect(ADDR)
-                    input_thread.start()
                     username = input("Enter Your Username: ").strip()
                     send(username)
+                    input_thread.start()
                 
                 except ConnectionRefusedError:
                     print("Not a valid Subnet\n")

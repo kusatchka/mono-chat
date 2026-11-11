@@ -1,7 +1,7 @@
 import socket, threading, sys
 
 DISCONNECT_MESSAGE = ["/leave", "/quit", "/bye", "/part", "/exit"]
-COMMANDS = ["/list", "/ban", "/kick"]
+COMMANDS = ["/list", "/ban", "/kick", "/ip"]
 FORMAT = 'utf-8'
 HEADER = 64
 PORT = 5050
@@ -9,8 +9,8 @@ SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
 
 connections = []
-server_usernames = {}
-client_usernames = {} #Reversed server_usernames
+server_usernames = {} #ip -> nickname
+client_usernames = {} #nickname -> ip
 usernames = list()
 
 disconnect = threading.Event()
@@ -40,10 +40,10 @@ def handle_client(conn, addr):
                     username = msg
                     usernames.append(username)
                     server_usernames.update({addr: username})
-                    client_usernames.update({username: addr})
+                    client_usernames.update({username: [addr, conn]})
                     
                     for connection in connections:
-                            connection.send(f"{server_usernames[addr]} has joined".encode(FORMAT))
+                            connection.send(f"{server_usernames[addr]} has joined\n".encode(FORMAT))
                 
                 else: 
 
@@ -51,12 +51,12 @@ def handle_client(conn, addr):
                         connections.remove(conn)
                         
                         for connection in connections:    
-                            connection.send(f"[{server_usernames[addr]}] has left".encode(FORMAT))
+                            connection.send(f"[{server_usernames[addr]}] has left\n".encode(FORMAT))
                         
                         usernames.remove(username)
                         server_usernames.pop(addr)
                         client_usernames.pop(username)
-                        connected = False
+                        disconnect.set()
                         
                         if len(client_usernames) == 0:
                             print("[SERVER]: No Active Connections")
@@ -65,7 +65,7 @@ def handle_client(conn, addr):
                             print(f"[SERVER]: {client_usernames}")
                             disconnect.set()
                     
-                    elif msg == COMMANDS[0]:
+                    elif msg == COMMANDS[0]: #/list command for clients
                         conn.send(f"Users that are online: {usernames}".encode(FORMAT))
                     
                     else:
@@ -87,11 +87,34 @@ def server_input():
             exit()
         
         elif message == COMMANDS[0]:
-            print(server_usernames)
+            print(usernames)
         
-        #elif message == COMMANDS[2](entered_username): #will be added soon
-        #    if entered_username in client_usernames:
-        #        client_usernames.get(entered_username)
+        elif message == COMMANDS[2] + (" ") + message.replace("/kick ", ""):
+            entered_username = message.replace("/kick ", "")
+
+            if entered_username in client_usernames:
+                print(client_usernames[entered_username])
+                usernames.remove(entered_username)
+                connections.remove(client_usernames[entered_username][1])
+                disconnect.set()
+                server_usernames.pop(client_usernames[entered_username][0])
+                client_usernames.pop(entered_username)
+                print(connections)
+                
+            else:
+                print("User not found, Try Again")
+
+
+        elif message == COMMANDS[3] + (" ") + message.replace("/ip ", ""):
+            entered_username = message.replace("/ip ", "")
+
+            if entered_username in client_usernames:
+                print(f"User Found: {entered_username}")
+                print(f"IP: {client_usernames.get(entered_username)[0]}")
+                
+            else:
+                print("User Not Found, Try Again")
+
 
         else:
             print(f"[SERVER]: {message}")
