@@ -1,6 +1,4 @@
-import socket, threading, sys
-from textual.app import App, ComposeResult
-from textual.widgets import Footer, Header 
+import socket, threading, sys, asyncio
 from enum import Enum
 
 DISCONNECT_MESSAGE = ["/leave", "/quit", "/bye", "/part", "/exit"]
@@ -13,7 +11,7 @@ SERVER = SERVER[:-3]
 ADDR = (SERVER, PORT)
 base = SERVER
 
-def check_for_messages():
+async def check_for_messages():
     while True:
         recv_message = client.recv(2048).decode(FORMAT)
 
@@ -27,11 +25,9 @@ def send(msg):
     send_length += b' ' * (HEADER - len(send_length))
     client.send(send_length)
     client.send(message)
+ 
 
-if __name__ == "__main__":
-    input_thread = threading.Thread(target=check_for_messages, daemon=True)
-    
-    def handle_subnet_input():
+def handle_subnet_input():
         SERVERSUB_IDENT = input("Enter Subnet: ")
         while True:
             if len(SERVERSUB_IDENT) > 3:
@@ -52,7 +48,8 @@ if __name__ == "__main__":
                     client.connect(ADDR)
                     username = input("Enter Your Username: ").strip()
                     send(username)
-                    input_thread.start()
+                    global print_all_incoming_messages 
+                    print_all_incoming_messages = asyncio.create_task(check_for_messages())
                 
                 except ConnectionRefusedError:
                     print("Not a valid Subnet\n")
@@ -68,17 +65,24 @@ if __name__ == "__main__":
                 
                 else:
                     break
+
+async def main(): #change to async :steam_happy:
     
     handle_subnet_input()
+
     while True:
         message = input("")
 
         if message in DISCONNECT_MESSAGE:
             send(message)
             print(f"Disconnected from {ADDR}")
+            print_all_incoming_messages.cancel()
             sys.exit()
             break
         
 
         else:
             send(message)
+         
+
+asyncio.run(main())
