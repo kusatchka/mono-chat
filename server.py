@@ -14,7 +14,6 @@ client_usernames = {} #nickname -> ip
 usernames = list()
 
 disconnect = threading.Event()
-lock = threading.Lock()
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
@@ -25,7 +24,7 @@ def handle_client(conn, addr):
 
     connected = True
     first_message = True
-
+    disconnect.clear()
     while not disconnect.is_set():
         
         while connected:
@@ -38,13 +37,18 @@ def handle_client(conn, addr):
                 if first_message:
                     first_message = False
                     username = msg
-                    usernames.append(username)
-                    server_usernames.update({addr: username})
-                    client_usernames.update({username: [addr, conn]})
                     
-                    for connection in connections:
-                            connection.send(f"{server_usernames[addr]} has joined\n".encode(FORMAT))
-                
+                    if username in usernames:
+                        connection.send(f"The Username: {username} is already taken please choose something different")
+                    
+                    else:
+                        usernames.append(username)
+                        server_usernames.update({addr: username})
+                        client_usernames.update({username: [addr, conn]})
+                        
+                        for connection in connections:
+                                connection.send(f"{server_usernames[addr]} has joined\n".encode(FORMAT))
+                    
                 else: 
 
                     if msg in DISCONNECT_MESSAGE:
@@ -58,11 +62,11 @@ def handle_client(conn, addr):
                         client_usernames.pop(username)
                         disconnect.set()
                         
-                        if len(client_usernames) == 0:
+                        if threading.active_count() == 0:
                             print("[SERVER]: No Active Connections")
                         
                         else: 
-                            print(f"[SERVER]: {client_usernames}")
+                            print(f"[SERVER] ACTIVE CONNECTIONS: {threading.active_count() - 2}]")
                             disconnect.set()
                     
                     elif msg == COMMANDS[0]: #/list command for clients
@@ -74,8 +78,9 @@ def handle_client(conn, addr):
                         for connection in connections:
                             connection.send(f"[{server_usernames[addr]}]: {msg}".encode(FORMAT))
             
-    print(f"[SERVER] ACTIVE CONNECTIONS: {threading.active_count() - 2}]")
     conn.close() #closes the connection between the client and the server
+    disconnect.clear()
+    print(f"[SERVER] ACTIVE CONNECTIONS: {threading.active_count() - 2}]")
 
 def server_input():
 
@@ -99,7 +104,6 @@ def server_input():
                 disconnect.set()
                 server_usernames.pop(client_usernames[entered_username][0])
                 client_usernames.pop(entered_username)
-                print(connections)
                 
             else:
                 print("User not found, Try Again")
